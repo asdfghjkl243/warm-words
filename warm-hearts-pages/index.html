@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0e0a0c" />
+<meta name="color-scheme" content="dark" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="给此刻的你" />
+<meta name="format-detection" content="telephone=no" />
+<title>给此刻的你</title>
+<style>
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+    background:
+      radial-gradient(90vmax 60vmax at 50% -12%, rgba(122, 62, 78, .34), transparent 62%),
+      radial-gradient(80vmax 60vmax at 84% 108%, rgba(92, 52, 66, .22), transparent 60%),
+      linear-gradient(180deg, #120c10 0%, #0e0a0c 58%, #0b0709 100%);
+    color: #f6ece9;
+    font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ---------- 背景：一层极淡的暖光 ---------- */
+  .glow {
+    position: fixed; z-index: 0; pointer-events: none; border-radius: 50%;
+    will-change: transform;
+  }
+  .glow.g1 {
+    width: 70vmax; height: 46vmax; left: 50%; top: -18vmax;
+    transform: translateX(-50%);
+    background: radial-gradient(closest-side, rgba(214, 138, 156, .13), rgba(214, 138, 156, 0) 72%);
+    animation: drift 34s ease-in-out infinite alternate;
+  }
+  .glow.g2 {
+    width: 46vmax; height: 34vmax; right: -14vmax; bottom: -10vmax;
+    background: radial-gradient(closest-side, rgba(190, 146, 112, .08), rgba(190, 146, 112, 0) 70%);
+    animation: drift2 42s ease-in-out infinite alternate;
+  }
+  @keyframes drift { from { transform: translateX(-50%) translateY(0); } to { transform: translateX(-50%) translateY(3vmax); } }
+  @keyframes drift2 { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-3vmax, -2vmax, 0); } }
+
+  /* ---------- 粒子 ---------- */
+  #sky { position: fixed; inset: 0; z-index: 1; display: block; pointer-events: none; }
+
+  .veil {
+    position: fixed; inset: 0; z-index: 2; pointer-events: none;
+    background: radial-gradient(120% 100% at 50% 48%, transparent 40%, rgba(8, 4, 6, .32) 78%, rgba(6, 3, 4, .55) 100%);
+  }
+
+  /* ---------- 主舞台 ---------- */
+  .stage {
+    position: fixed; inset: 0; z-index: 3;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: clamp(16px, 2.6vh, 26px);
+    padding: clamp(24px, 6vw, 72px);
+    padding-top: max(clamp(24px, 6vw, 72px), env(safe-area-inset-top, 0px));
+    padding-bottom: max(clamp(24px, 6vw, 72px), env(safe-area-inset-bottom, 0px));
+    text-align: center;
+  }
+
+  .mark {
+    width: 22px; height: 20px; margin-bottom: -2px;
+    color: #e6b4c0; opacity: .8;
+    animation: markBreathe 6s ease-in-out infinite;
+  }
+  .mark svg { width: 100%; height: 100%; display: block; }
+  @keyframes markBreathe { 0%, 100% { opacity: .5; } 50% { opacity: .9; } }
+
+  .kicker {
+    margin: 0;
+    font-size: clamp(9.5px, 1.2vmin, 11.5px);
+    font-weight: 400;
+    letter-spacing: .62em; text-indent: .62em;
+    color: rgba(238, 214, 216, .42);
+  }
+
+  .msg-wrap {
+    max-width: min(88vw, 760px);
+    transition: opacity .65s ease, transform .65s ease;
+  }
+  .msg-wrap.out { opacity: 0; transform: translateY(-6px); }
+
+  .msg {
+    margin: 0;
+    font-family: "Songti SC", "STSong", "Source Han Serif SC", "Noto Serif SC", "SimSun", serif;
+    font-weight: 400;
+    font-size: clamp(23px, 4.4vmin, 52px);
+    line-height: 1.92;
+    letter-spacing: .12em;
+    color: #f7eeea;
+  }
+  .line { display: block; }
+  .ch { display: inline-block; opacity: 0; animation: chIn .95s ease both; }
+  @keyframes chIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .rule {
+    width: 46px; height: 1px; margin: clamp(-2px, .4vh, 4px) 0;
+    background: linear-gradient(90deg, transparent, rgba(232, 190, 198, .45), transparent);
+  }
+
+  .actions {
+    display: flex; align-items: center; justify-content: center; gap: clamp(2px, 1vw, 10px);
+  }
+  .act {
+    -webkit-appearance: none; appearance: none;
+    background: none; border: 0;
+    min-height: 44px; padding: 12px clamp(10px, 1.6vw, 16px);
+    font: inherit; font-size: 12.5px; line-height: 1;
+    letter-spacing: .3em; text-indent: .3em;
+    color: rgba(246, 233, 232, .72);
+    cursor: pointer;
+    position: relative;
+    transition: color .3s ease, opacity .3s ease;
+  }
+  .act::after {
+    content: ''; position: absolute; left: 50%; bottom: 9px;
+    width: 0; height: 1px;
+    background: rgba(230, 180, 192, .65);
+    transform: translateX(-50%);
+    transition: width .4s cubic-bezier(.2, .7, .2, 1);
+  }
+  .act:hover { color: rgba(250, 240, 238, .9); }
+  @media (hover: hover) and (pointer: fine) {
+    .act:hover::after { width: calc(100% - 28px); }
+  }
+  .act:active { opacity: .55; }
+  .act:focus-visible { outline: 1px solid rgba(230, 180, 192, .6); outline-offset: 4px; }
+  .sep { font-size: 12px; color: rgba(238, 214, 216, .22); pointer-events: none; }
+
+  .hint {
+    position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 26px);
+    z-index: 5; text-align: center;
+    font-size: 10.5px; letter-spacing: .34em; text-indent: .34em;
+    color: rgba(238, 214, 216, .3);
+    pointer-events: none;
+    transition: opacity 1.2s ease;
+  }
+  .hint.dim { opacity: .35; }
+
+  /* ---------- 轻触的涟漪 ---------- */
+  .ring {
+    position: fixed; z-index: 4;
+    width: 16px; height: 16px; margin: -8px 0 0 -8px;
+    border-radius: 50%;
+    border: 1px solid rgba(236, 196, 206, .42);
+    pointer-events: none;
+    animation: ring 1.1s cubic-bezier(.22, .61, .36, 1) forwards;
+  }
+  @keyframes ring { from { transform: scale(.6); opacity: .75; } to { transform: scale(8); opacity: 0; } }
+
+  /* ---------- 静态 / 减少动效 ---------- */
+  .still .ch { animation: none !important; opacity: 1; }
+  .still .mark, .still .glow { animation: none !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ch { animation-duration: .01ms !important; animation-delay: 0ms !important; }
+    .mark, .glow { animation: none !important; }
+  }
+
+  /* ---------- 小屏 ---------- */
+  @media (max-width: 420px) {
+    .msg { font-size: clamp(24px, 6.6vmin, 32px); letter-spacing: .06em; line-height: 1.85; }
+    .act { font-size: 12px; }
+    .kicker { letter-spacing: .48em; text-indent: .48em; }
+  }
+  @media (max-height: 520px) {
+    .mark { display: none; }
+    .kicker { display: none; }
+    .msg { font-size: clamp(19px, 4.2vmin, 30px); letter-spacing: .08em; line-height: 1.7; }
+    .rule { display: none; }
+    .stage { gap: 12px; }
+  }
+</style>
+</head>
+<body>
+  <div class="glow g1" aria-hidden="true"></div>
+  <div class="glow g2" aria-hidden="true"></div>
+  <canvas id="sky" aria-hidden="true"></canvas>
+  <div class="veil" aria-hidden="true"></div>
+
+  <main class="stage">
+    <div class="mark" aria-hidden="true">
+      <svg viewBox="0 0 24 22" fill="none">
+        <path d="M12 20.4C9.6 18.6 2 14 2 8.2 2 5.3 4.2 3.2 6.9 3.2c2 0 3.9 1.2 5.1 3 1.2-1.8 3.1-3 5.1-3 2.7 0 4.9 2.1 4.9 5 0 5.8-7.6 10.4-10 12.2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <p class="kicker">给此刻的你</p>
+    <div class="msg-wrap"><h1 id="msg" class="msg"></h1></div>
+    <span class="rule" aria-hidden="true"></span>
+
+    <div class="actions">
+      <button id="hug" class="act" type="button">抱抱</button>
+      <span class="sep" aria-hidden="true">·</span>
+      <button id="swap" class="act" type="button">换一句</button>
+    </div>
+  </main>
+
+  <p class="hint">轻触屏幕 · 留一颗心</p>
+
+  <noscript>
+    <style>
+      .kicker, .actions, .hint, .mark, .rule { display: none; }
+      .msg::after { content: "愿你被世界温柔以待，更愿你先温柔待自己。"; }
+    </style>
+  </noscript>
+
+<script>
+(() => {
+  'use strict';
+
+  const RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const STILL = /[?&]still\b/.test(location.search);
+  const MOBILE = window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 720;
+  const ANIMATE = !RM && !STILL;
+  if (STILL) document.documentElement.classList.add('still');
+
+  const cvs = document.getElementById('sky');
+  const ctx = cvs.getContext('2d', { alpha: true });
+  const DPR = Math.min(window.devicePixelRatio || 1, MOBILE ? 1.5 : 2);
+
+  let W = 0, H = 0;
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const pick = (a) => a[(Math.random() * a.length) | 0];
+
+  function rgba(hex, a) {
+    const h = hex.replace('#', '');
+    const v = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+    return 'rgba(' + ((v >> 16) & 255) + ',' + ((v >> 8) & 255) + ',' + (v & 255) + ',' + a + ')';
+  }
+
+  const HEART_PATH = 'M100 177 C 43 133 9 101 9 64 C 9 35 31 15 58 15 C 79 15 94 29 100 44 C 106 29 121 15 142 15 C 169 15 191 35 191 64 C 191 101 157 133 100 177 Z';
+
+  /* ---------------- 贴图：细线心 & 淡填充心 ---------------- */
+  function outlineSprite(color) {
+    const S = 160;
+    const c = document.createElement('canvas');
+    c.width = c.height = S;
+    const g = c.getContext('2d');
+    g.scale(S / 220, S / 220);
+    g.translate(10, 10);
+    g.strokeStyle = color;
+    g.lineWidth = 3;
+    g.lineJoin = 'round';
+    g.stroke(new Path2D(HEART_PATH));
+    return c;
+  }
+
+  function fillSprite(light, mid, deep) {
+    const S = 160;
+    const c = document.createElement('canvas');
+    c.width = c.height = S;
+    const g = c.getContext('2d');
+    g.translate(S / 2, S / 2);
+    const k = S * 0.34;
+
+    const heart = new Path2D();
+    const steps = 120;
+    for (let i = 0; i <= steps; i++) {
+      const t = (i / steps) * Math.PI * 2;
+      const hx = 16 * Math.pow(Math.sin(t), 3);
+      const hy = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+      const x = (hx / 16) * k;
+      const y = (-hy / 16) * k - 0.375 * k;
+      if (i === 0) heart.moveTo(x, y); else heart.lineTo(x, y);
+    }
+    heart.closePath();
+
+    const body = g.createLinearGradient(0, -k * 0.8, 0, k * 0.8);
+    body.addColorStop(0, light);
+    body.addColorStop(0.55, mid);
+    body.addColorStop(1, deep);
+    g.fillStyle = body;
+    g.fill(heart);
+    return c;
+  }
+
+  function dotSprite(color) {
+    const S = 32;
+    const c = document.createElement('canvas');
+    c.width = c.height = S;
+    const g = c.getContext('2d');
+    const grd = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+    grd.addColorStop(0, 'rgba(255,248,246,0.95)');
+    grd.addColorStop(0.4, rgba(color, 0.55));
+    grd.addColorStop(1, rgba(color, 0));
+    g.fillStyle = grd;
+    g.fillRect(0, 0, S, S);
+    return c;
+  }
+
+  const OUTLINE = [
+    outlineSprite('#e8bcc6'),
+    outlineSprite('#e7cbae'),
+    outlineSprite('#d7c2d0')
+  ];
+  const FILLED = [
+    fillSprite('#f7dfe2', '#e7b3bd', '#c98b9b'),
+    fillSprite('#f8e8d8', '#e6c4a1', '#c9a074'),
+    fillSprite('#f0dfec', '#d3b4d0', '#ab8aa8')
+  ];
+  const DOTS = [dotSprite('#ffe9e2'), dotSprite('#f2d6c4'), dotSprite('#efd0da')];
+
+  /* ---------------- 极简粒子 ---------------- */
+  const ambient = [];
+  const fx = [];
+  const FX_MAX = MOBILE ? 90 : 160;
+
+  function makeAmbient(kind) {
+    if (kind === 'dot') {
+      return {
+        kind: 'dot', sprite: pick(DOTS),
+        x: rand(0, W), y: rand(0, H),
+        size: rand(1.8, 3.6),
+        vy: -rand(1.5, 5),
+        sway: rand(2, 6), freq: rand(.08, .25), phase: rand(0, Math.PI * 2),
+        alpha: rand(.12, .34), tw: rand(0, Math.PI * 2), twf: rand(.6, 1.6)
+      };
+    }
+    const outline = kind === 'outline';
+    return {
+      kind: 'heart', outline,
+      sprite: outline ? pick(OUTLINE) : pick(FILLED),
+      x: rand(-30, W + 30), y: rand(-H * .1, H),
+      size: outline ? rand(12, 30) : rand(8, 16),
+      vy: -rand(2.5, 7.5),
+      sway: rand(3, 11), freq: rand(.1, .35), phase: rand(0, Math.PI * 2),
+      rot: rand(-.25, .25), vr: rand(-.08, .08),
+      alpha: outline ? rand(.24, .48) : rand(.26, .46),
+      breathe: rand(0, Math.PI * 2), bf: rand(.12, .3)
+    };
+  }
+
+  function reroll(p) {
+    const fresh = makeAmbient(p.kind === 'dot' ? 'dot' : (Math.random() < .55 ? 'outline' : 'filled'));
+    Object.assign(p, fresh);
+  }
+
+  function targetCount() {
+    if (MOBILE) return Math.round(Math.min(24, Math.max(16, (W * H) / 22000)));
+    return Math.round(Math.min(32, Math.max(18, (W * H) / 48000)));
+  }
+
+  function ensureAmbient() {
+    const target = targetCount();
+    while (ambient.length > target) ambient.pop();
+    while (ambient.length < target) {
+      const r = Math.random();
+      ambient.push(makeAmbient(r < .45 ? 'outline' : r < .75 ? 'filled' : 'dot'));
+    }
+  }
+
+  function paint(sprite, x, y, size, rot, alpha) {
+    if (alpha <= .004 || size <= .2) return;
+    ctx.globalAlpha = Math.min(1, alpha);
+    if (rot) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rot);
+      ctx.drawImage(sprite, -size / 2, -size / 2, size, size);
+      ctx.restore();
+    } else {
+      ctx.drawImage(sprite, x - size / 2, y - size / 2, size, size);
+    }
+  }
+
+  /* 轻触：几颗心慢慢浮起 */
+  function drift(x, y, n) {
+    const count = Math.round(n * (MOBILE ? 0.8 : 1));
+    for (let i = 0; i < count; i++) {
+      fx.push({
+        kind: Math.random() < .72 ? 'heart' : 'dot',
+        sprite: pick(OUTLINE),
+        x: x + rand(-18, 18),
+        y: y + rand(-8, 8),
+        vx: rand(-10, 10),
+        vy: -rand(16, 34),
+        size: rand(8, 17),
+        rot: rand(-.2, .2),
+        vr: rand(-.25, .25),
+        life: 0,
+        ttl: rand(1.3, 2.3),
+        alpha: rand(.28, .5)
+      });
+    }
+    if (fx.length > FX_MAX) fx.splice(0, fx.length - FX_MAX);
+  }
+
+  let T = 0;
+
+  /* 文字区域保护罩：飘过排版的心自动淡出，保证文案干净 */
+  function clearance(x, y) {
+    const dx = (x / W - .5) / .32;
+    const dy = (y / H - .47) / .17;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (d >= 1.35) return 1;
+    if (d <= 1) return .07;
+    return .07 + .93 * ((d - 1) / .35);
+  }
+
+  function update(dt) {
+    for (const p of ambient) {
+      p.y += p.vy * dt;
+      p.x += Math.sin(T * p.freq + p.phase) * p.sway * dt;
+      if (p.rot !== undefined) p.rot += p.vr * dt;
+      if (p.y < -p.size - 10) {
+        p.y = H + p.size + 10;
+        p.x = rand(-30, W + 30);
+        reroll(p);
+      }
+      if (p.x < -80) p.x = W + 70;
+      else if (p.x > W + 80) p.x = -70;
+    }
+
+    for (let i = fx.length - 1; i >= 0; i--) {
+      const p = fx[i];
+      p.life += dt;
+      if (p.life >= p.ttl) { fx.splice(i, 1); continue; }
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= Math.pow(.985, dt * 60);
+      p.vy *= Math.pow(.99, dt * 60);
+      if (p.vr) p.rot += p.vr * dt;
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    ctx.globalCompositeOperation = 'source-over';
+    for (const p of ambient) {
+      if (p.kind === 'dot') continue;
+      const a = p.alpha * (.82 + .18 * Math.sin(T * p.bf + p.breathe)) * clearance(p.x, p.y);
+      paint(p.sprite, p.x, p.y, p.size, p.rot, a);
+    }
+    for (const p of fx) {
+      if (p.kind !== 'heart') continue;
+      const t = p.life / p.ttl;
+      paint(p.sprite, p.x, p.y, p.size, p.rot, Math.pow(1 - t, 1.3) * p.alpha);
+    }
+
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of ambient) {
+      if (p.kind !== 'dot') continue;
+      paint(p.sprite, p.x, p.y, p.size, 0, p.alpha * (.45 + .55 * Math.sin(T * p.twf + p.tw)) * clearance(p.x, p.y));
+    }
+    for (const p of fx) {
+      if (p.kind !== 'dot') continue;
+      const t = p.life / p.ttl;
+      paint(p.sprite, p.x, p.y, p.size, 0, Math.pow(1 - t, 1.3) * p.alpha);
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  let last = 0, raf = 0;
+
+  function loop(now) {
+    let dt = (now - last) / 1000;
+    last = now;
+    if (!(dt > 0)) dt = 0;
+    if (dt > .05) dt = .05;
+    T += dt;
+    update(dt);
+    draw();
+    raf = requestAnimationFrame(loop);
+  }
+
+  function startLoop() {
+    cancelAnimationFrame(raf);
+    last = performance.now();
+    raf = requestAnimationFrame(loop);
+  }
+
+  function resize() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    cvs.width = Math.round(W * DPR);
+    cvs.height = Math.round(H * DPR);
+    cvs.style.width = W + 'px';
+    cvs.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ensureAmbient();
+    if (!ANIMATE) draw();
+  }
+
+  /* ---------------- 文案 ---------------- */
+  const MESSAGES = [
+    '你不需要很厉害，\n才值得被爱。',
+    '今天也辛苦了，\n去喝口热水吧。',
+    '慢一点没关系，\n春天不会缺席。',
+    '难过的时候就难过，\n不用急着好起来。',
+    '愿你被世界温柔以待，\n更愿你先温柔待自己。',
+    '你已经很努力了，\n剩下的交给时间。',
+    '请记得，\n你本身就是一份礼物。',
+    '如果没有人抱你，\n就先抱抱自己。',
+    '今晚的月亮很轻，\n适合睡个好觉。',
+    '所有的喜欢，\n都在慢慢向你靠近。',
+    '不必时刻发光，\n做自己就很好。',
+    '你值得世间所有温柔。'
+  ];
+
+  const HUGS = [
+    '抱抱。\n今天的你，辛苦了。',
+    '一个很轻的抱抱，\n请查收。',
+    '累了就靠一会儿，\n我在这儿。',
+    '把烦恼放在门外，\n你只负责开心。',
+    '你被抱住了，\n现在什么都可以不想。'
+  ];
+
+  const msgEl = document.getElementById('msg');
+  const msgWrap = document.querySelector('.msg-wrap');
+  let cycleTimer = null, token = 0, queue = [];
+
+  function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = (Math.random() * (i + 1)) | 0;
+      const t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function nextText() {
+    if (!queue.length) queue = shuffle(MESSAGES.slice());
+    return queue.pop();
+  }
+
+  function paintMessage(text) {
+    msgEl.textContent = '';
+    const chars = [];
+    text.split('\n').forEach((line) => {
+      const ln = document.createElement('span');
+      ln.className = 'line';
+      for (const ch of line) {
+        const s = document.createElement('span');
+        s.className = 'ch';
+        s.textContent = ch === ' ' ? '\u00A0' : ch;
+        ln.appendChild(s);
+        chars.push(s);
+      }
+      msgEl.appendChild(ln);
+    });
+    chars.forEach((el, i) => { el.style.animationDelay = Math.round(i * 22) + 'ms'; });
+  }
+
+  function durationFor(text) {
+    const n = text.replace(/\n/g, '').length;
+    return Math.max(5600, Math.min(9000, 3200 + n * 150));
+  }
+
+  function show(text) {
+    const my = ++token;
+    clearTimeout(cycleTimer);
+    const render = () => {
+      if (my !== token) return;
+      paintMessage(text);
+      msgWrap.classList.remove('out');
+      cycleTimer = setTimeout(() => {
+        if (my !== token) return;
+        show(nextText());
+      }, durationFor(text));
+    };
+    if (!ANIMATE) { render(); return; }
+    msgWrap.classList.add('out');
+    setTimeout(render, 620);
+  }
+
+  /* ---------------- 交互 ---------------- */
+  function ring(x, y) {
+    const d = document.createElement('div');
+    d.className = 'ring';
+    d.style.left = x + 'px';
+    d.style.top = y + 'px';
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 1200);
+  }
+
+  let hinted = false;
+  const hintEl = document.querySelector('.hint');
+  function fadeHint() {
+    if (hinted) return;
+    hinted = true;
+    hintEl.classList.add('dim');
+  }
+
+  window.addEventListener('pointerdown', (e) => {
+    if (e.target.closest && e.target.closest('button')) return;
+    ring(e.clientX, e.clientY);
+    drift(e.clientX, e.clientY, 5);
+    fadeHint();
+  }, { passive: true });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.key === ' ') {
+      e.preventDefault();
+      ring(W / 2, H * .62);
+      drift(W / 2, H * .62, 6);
+      fadeHint();
+    }
+  });
+
+  document.getElementById('hug').addEventListener('click', () => {
+    const r = document.getElementById('hug').getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    ring(cx, cy);
+    drift(W / 2, cy, 9);
+    fadeHint();
+    show(pick(HUGS));
+  });
+
+  document.getElementById('swap').addEventListener('click', () => {
+    drift(W / 2, H * .58, 4);
+    fadeHint();
+    show(nextText());
+  });
+
+  /* ---------------- 启动 ---------------- */
+  resize();
+  let rt = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(rt);
+    rt = setTimeout(resize, 180);
+  });
+
+  show(nextText());
+
+  if (ANIMATE) {
+    startLoop();
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) cancelAnimationFrame(raf);
+      else startLoop();
+    });
+  }
+})();
+</script>
+</body>
+</html>
